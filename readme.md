@@ -76,33 +76,11 @@ Welcome to the **Battlezone Clone**, a retro-style tank game built with JavaScri
 
 ### Running the Game
 
-#### Option 1: Open Directly in Browser
+#### Open Directly in Browser
 
 - Open the `index.html` file in your preferred web browser.
   - Right-click on `index.html` and select **Open with** > **Your Browser**.
   - **Note:** Some browsers may restrict local file access for sound files. If you encounter issues with sound, try Option 2.
-
-#### Option 2: Use a Local Web Server
-
-- **Using Python 3:**
-
-  ```bash
-  python -m http.server 8000
-  ```
-
-- **Using Python 2:**
-
-  ```bash
-  python -m SimpleHTTPServer 8000
-  ```
-
-- **Using Node.js with http-server:**
-
-  ```bash
-  npx http-server -p 8000
-  ```
-
-- Open your web browser and navigate to `http://localhost:8000`.
 
 ## Controls
 
