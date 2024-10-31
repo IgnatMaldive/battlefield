@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Battlezone Clone with Terrain Limits and Sound Effects</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background-color: black;
+            cursor: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script>
+        // Get the canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Variables for keyboard input
+        const keys = {};
+
+        // Event listeners for key presses
+        document.addEventListener('keydown', function(e) {
+            keys[e.code] = true;
+        });
+
+        document.addEventListener('keyup', function(e) {
+            keys[e.code] = false;
+        });
+
+        // Sound effects
+        const sounds = {
+            shoot: new Audio('shoot.wav'),
+            explosion: new Audio('explosion.wav'),
+            hit: new Audio('hit.wav')
+        };
+
+        // Base class for game objects
+        class GameObject {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.angle = 0; // in radians
+                this.speed = 0;
+                this.maxSpeed = 2;
+                this.color = color;
+                this.isActive = true; // For removal when inactive
+            }
+
+            update() {
+                // Placeholder for child classes
+            }
+
+            draw() {
+                // Placeholder for child classes
+            }
+        }
+
+        // Player tank class
+        class PlayerTank extends GameObject {
+            constructor(x, y, color) {
+                super(x, y, color);
+                this.reloadTime = 500; // milliseconds
+                this.lastShot = 0;
+            }
+
+            update() {
+                // Handle movement
+                if (keys['ArrowUp']) {
+                    this.speed = this.maxSpeed;
+                } else if (keys['ArrowDown']) {
+                    this.speed = -this.maxSpeed;
+                } else {
+                    this.speed = 0;
+                }
+
+                if (keys['ArrowLeft']) {
+                    this.angle -= 0.05;
+                }
+                if (keys['ArrowRight']) {
+                    this.angle += 0.05;
+                }
+
+                // Calculate new position
+                let newX = this.x + Math.cos(this.angle) * this.speed;
+                let newY = this.y + Math.sin(this.angle) * this.speed;
+
+                // Check collision with buildings
+                if (!isCollidingWithBuildings(newX, newY)) {
+                    this.x = newX;
+                    this.y = newY;
+                }
+
+                // Keep the player within bounds
+                if (this.x < 10) this.x = 10;
+                if (this.x > canvas.width - 10) this.x = canvas.width - 10;
+                if (this.y < 10) this.y = 10;
+                if (this.y > canvas.height - 10) this.y = canvas.height - 10;
+
+                // Handle shooting
+                if (keys['Space']) {
+                    let now = Date.now();
+                    if (now - this.lastShot > this.reloadTime) {
+                        bullets.push(new Bullet(this.x, this.y, this.angle, 'green', 'player'));
+                        this.lastShot = now;
+                        sounds.shoot.currentTime = 0;
+                        sounds.shoot.play();
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                // Draw the tank body
+                ctx.moveTo(-10, -7);
+                ctx.lineTo(10, -7);
+                ctx.lineTo(10, 7);
+                ctx.lineTo(-10, 7);
+                ctx.closePath();
+                // Draw the barrel
+                ctx.moveTo(0, 0);
+                ctx.lineTo(15, 0);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // Enemy tank class
+        class EnemyTank extends GameObject {
+            constructor(x, y, color) {
+                super(x, y, color);
+                this.speed = 0.8; // Slower speed
+                this.reloadTime = 2000; // milliseconds
+                this.lastShot = 0;
+            }
+
+            update() {
+                // Simple AI to follow the player
+                let dx = player.x - this.x;
+                let dy = player.y - this.y;
+                let distance = Math.hypot(dx, dy);
+
+                // Only move and shoot if within a certain distance
+                if (distance < 300) {
+                    this.angle = Math.atan2(dy, dx);
+
+                    // Calculate new position
+                    let newX = this.x + Math.cos(this.angle) * this.speed;
+                    let newY = this.y + Math.sin(this.angle) * this.speed;
+
+                    // Check collision with buildings
+                    if (!isCollidingWithBuildings(newX, newY)) {
+                        this.x = newX;
+                        this.y = newY;
+                    }
+
+                    // Handle shooting
+                    let now = Date.now();
+                    if (now - this.lastShot > this.reloadTime) {
+                        bullets.push(new Bullet(this.x, this.y, this.angle, 'red', 'enemy'));
+                        this.lastShot = now;
+                        // Enemy shooting sound (optional)
+                        // sounds.shoot.currentTime = 0;
+                        // sounds.shoot.play();
+                    }
+                }
+
+                // Keep the enemy within bounds
+                if (this.x < 10) this.x = 10;
+                if (this.x > canvas.width - 10) this.x = canvas.width - 10;
+                if (this.y < 10) this.y = 10;
+                if (this.y > canvas.height - 10) this.y = canvas.height - 10;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                // Draw the tank body
+                ctx.moveTo(-10, -7);
+                ctx.lineTo(10, -7);
+                ctx.lineTo(10, 7);
+                ctx.lineTo(-10, 7);
+                ctx.closePath();
+                // Draw the barrel
+                ctx.moveTo(0, 0);
+                ctx.lineTo(15, 0);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // Bullet class
+        class Bullet extends GameObject {
+            constructor(x, y, angle, color, owner) {
+                super(x, y, color);
+                this.angle = angle;
+                this.speed = 5;
+                this.owner = owner; // 'player' or 'enemy'
+            }
+
+            update() {
+                // Update position
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+
+                // Check collision with buildings
+                buildings.forEach(building => {
+                    if (building.isActive && building.containsPoint(this.x, this.y)) {
+                        building.takeDamage(1);
+                        this.isActive = false;
+                        sounds.hit.currentTime = 0;
+                        sounds.hit.play();
+                    }
+                });
+
+                // Deactivate if out of bounds
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.isActive = false;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, -2);
+                ctx.lineTo(0, 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // Explosion class
+        class Explosion {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = 0;
+                this.maxRadius = 20;
+                this.isActive = true;
+            }
+
+            update() {
+                this.radius += 1;
+                if (this.radius > this.maxRadius) {
+                    this.isActive = false;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // Building class
+        class Building {
+            constructor(x, y, width, height, color) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+                this.isActive = true;
+                this.health = 5; // Number of hits it can take
+            }
+
+            containsPoint(px, py) {
+                return (
+                    px > this.x &&
+                    px < this.x + this.width &&
+                    py > this.y &&
+                    py < this.y + this.height
+                );
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+                if (this.health <= 0) {
+                    this.isActive = false;
+                    explosions.push(new Explosion(this.x + this.width / 2, this.y + this.height / 2, 'gray'));
+                    sounds.explosion.currentTime = 0;
+                    sounds.explosion.play();
+                } else {
+                    sounds.hit.currentTime = 0;
+                    sounds.hit.play();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = this.health / 5; // Fade out as it takes damage
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+                ctx.restore();
+            }
+        }
+
+        // Initialize player, enemies, bullets, explosions, and buildings
+        let player = new PlayerTank(canvas.width / 2, canvas.height / 2, 'green');
+        let enemies = [];
+        let bullets = [];
+        let explosions = [];
+        let buildings = [];
+        let score = 0;
+        let lives = 3;
+        let gameOver = false;
+
+        // Function to check collision with buildings
+        function isCollidingWithBuildings(x, y) {
+            return buildings.some(building => building.isActive && building.containsPoint(x, y));
+        }
+
+        // Spawn an enemy every few seconds
+        let enemySpawnInterval = setInterval(() => {
+            if (!gameOver) {
+                let x, y;
+                do {
+                    x = Math.random() * canvas.width;
+                    y = Math.random() * canvas.height;
+                } while (isCollidingWithBuildings(x, y) || Math.hypot(x - player.x, y - player.y) < 100);
+                enemies.push(new EnemyTank(x, y, 'red'));
+            }
+        }, 3000);
+
+        // Generate buildings at random locations
+        function generateBuildings() {
+            for (let i = 0; i < 5; i++) {
+                let width = 50;
+                let height = 50;
+                let x, y;
+                let collision;
+                do {
+                    collision = false;
+                    x = Math.random() * (canvas.width - width - 20) + 10;
+                    y = Math.random() * (canvas.height - height - 20) + 10;
+
+                    // Ensure buildings don't overlap
+                    buildings.forEach(building => {
+                        if (
+                            x < building.x + building.width &&
+                            x + width > building.x &&
+                            y < building.y + building.height &&
+                            y + height > building.y
+                        ) {
+                            collision = true;
+                        }
+                    });
+
+                    // Ensure buildings don't spawn on the player
+                    if (
+                        x < player.x + 20 &&
+                        x + width > player.x - 20 &&
+                        y < player.y + 20 &&
+                        y + height > player.y - 20
+                    ) {
+                        collision = true;
+                    }
+                } while (collision);
+
+                buildings.push(new Building(x, y, width, height, 'gray'));
+            }
+        }
+
+        // Call the function to generate buildings
+        generateBuildings();
+
+        // Game loop
+        function gameLoop() {
+            if (!gameOver) {
+                // Update
+                player.update();
+                enemies.forEach(enemy => enemy.update());
+                bullets.forEach(bullet => bullet.update());
+                explosions.forEach(explosion => explosion.update());
+                buildings.forEach(building => building.update && building.update());
+
+                // Collision detection between bullets and tanks
+                bullets.forEach(bullet => {
+                    if (!bullet.isActive) return;
+
+                    if (bullet.owner === 'player') {
+                        // Check collision with enemies
+                        enemies.forEach(enemy => {
+                            let dx = bullet.x - enemy.x;
+                            let dy = bullet.y - enemy.y;
+                            let distance = Math.hypot(dx, dy);
+                            if (distance < 10) {
+                                // Enemy hit
+                                enemy.isActive = false;
+                                bullet.isActive = false;
+                                explosions.push(new Explosion(enemy.x, enemy.y, 'orange'));
+                                sounds.explosion.currentTime = 0;
+                                sounds.explosion.play();
+                                score += 100;
+                            }
+                        });
+                    } else if (bullet.owner === 'enemy') {
+                        // Check collision with player
+                        let dx = bullet.x - player.x;
+                        let dy = bullet.y - player.y;
+                        let distance = Math.hypot(dx, dy);
+                        if (distance < 10) {
+                            // Player hit
+                            bullet.isActive = false;
+                            explosions.push(new Explosion(player.x, player.y, 'yellow'));
+                            sounds.explosion.currentTime = 0;
+                            sounds.explosion.play();
+                            lives -= 1;
+                            if (lives <= 0) {
+                                gameOver = true;
+                            }
+                        }
+                    }
+                });
+
+                // Remove inactive objects
+                enemies = enemies.filter(enemy => enemy.isActive);
+                bullets = bullets.filter(bullet => bullet.isActive);
+                explosions = explosions.filter(explosion => explosion.isActive);
+                buildings = buildings.filter(building => building.isActive);
+
+                // Clear screen
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw terrain limits with 0.5 pixel offset
+                ctx.save();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
+                ctx.restore();
+
+                // Draw
+                buildings.forEach(building => building.draw());
+                player.draw();
+                enemies.forEach(enemy => enemy.draw());
+                bullets.forEach(bullet => bullet.draw());
+                explosions.forEach(explosion => explosion.draw());
+
+                // Draw HUD
+                ctx.fillStyle = 'white';
+                ctx.font = '20px Arial';
+                ctx.fillText('Score: ' + score, 10, 20);
+                ctx.fillText('Lives: ' + lives, 10, 40);
+
+                requestAnimationFrame(gameLoop);
+            } else {
+                // Game Over Screen
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '50px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 50);
+                ctx.font = '30px Arial';
+                ctx.fillText('Final Score: ' + score, canvas.width / 2, canvas.height / 2);
+            }
+        }
+
+        // Start the game loop
+        gameLoop();
+    </script>
+</body>
+</html>
