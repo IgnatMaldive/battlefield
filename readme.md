@@ -1,12 +1,14 @@
 # Battlezone Clone with Obstacles, Terrain Limits, and Sound Effects
 
+![Game Screenshot](battlefield.jpg)
+
+
 Welcome to the **Battlezone Clone**, a retro-style tank game built with JavaScript and HTML5 Canvas. Navigate your tank through a battlefield filled with obstacles, engage enemy tanks, and survive as long as possible while aiming for a high score.
 
 ## Table of Contents
 
 - [Features](#features)
 - [Gameplay](#gameplay)
-- [Screenshots](#screenshots)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -36,10 +38,6 @@ Welcome to the **Battlezone Clone**, a retro-style tank game built with JavaScri
 - Avoid enemy fire and collisions with buildings.
 - Buildings can be destroyed by shooting them multiple times.
 - Survive as long as possible to achieve a high score.
-
-## Screenshots
-
-*Screenshots are not included in this README. Please run the game to experience the visuals.*
 
 ## Getting Started
 
