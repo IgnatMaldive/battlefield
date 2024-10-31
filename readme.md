@@ -2,6 +2,7 @@
 
 ![Game Screenshot](battlefield.jpg)
 
+Play here: https://ignatmaldive.github.io/battlefield/
 
 Welcome to the **Battlezone Clone**, a retro-style tank game built with JavaScript and HTML5 Canvas. Navigate your tank through a battlefield filled with obstacles, engage enemy tanks, and survive as long as possible while aiming for a high score.
 
